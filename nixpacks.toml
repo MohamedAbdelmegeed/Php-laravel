@@ -28,7 +28,16 @@ cmds = [
     # Build front-end assets. The nixpacks PHP provider normally does this in
     # its own build phase, but declaring cmds here REPLACES that phase, so it
     # has to be spelled out or public/build/manifest.json never exists.
-    "if [ -f package.json ]; then npm ci && npm run build; fi",
+    #
+    # Gated on the Node version: the provider pins nodejs_18, while Vite 7 and
+    # Tailwind 4 require 20.19+. On Node 18 the build dies on
+    # @tailwindcss/oxide's native binding, so it is skipped rather than failing
+    # the deploy. Adding nodejs_22 to nixPkgs is NOT the fix - two packages
+    # claiming bin/node collide in the nix-env profile, exactly like pdo_pgsql
+    # did. To actually ship assets, downgrade to Vite 5 + Tailwind 3 (which run
+    # on Node 18) or move this app to a Dockerfile build where the Node version
+    # is yours to choose.
+    "if [ -f package.json ] && node -e 'process.exit(parseInt(process.versions.node) >= 20 ? 0 : 1)'; then npm ci && npm run build; else echo '>>> Skipping Vite build: Node 18 is too old for Vite 7 / Tailwind 4 (needs 20.19+). public/build/manifest.json will be absent; Blade must guard @vite, as the stock welcome view already does.'; fi",
 
     # Everything php-fpm (www-data) writes to at runtime.
     "mkdir -p /app/storage/logs",
