@@ -1,22 +1,18 @@
 [phases.setup]
-# pdo_pgsql is required by DB_CONNECTION=pgsql.
+# pdo_pgsql is deliberately NOT listed here. Nixpacks' own PHP build
+# (php-with-extensions-8.2.27) already bundles it, alongside pgsql, mysqlnd,
+# pdo_sqlite, intl, gd and friends - start.sh logs which drivers are live.
 #
-# Nixpacks chooses the PHP version itself from composer.json's `require.php`
-# constraint - today "^8.2", so it builds PHP 8.2 (module API 20220829). A
-# php84Extensions.* .so is compiled against API 20240924 and will NOT load:
-# PHP prints "Unable to initialize module ... These options need to match" and
-# carries on WITHOUT the driver, which only shows up later as
-# "could not find driver" on the first query.
-#
-# All three are listed so the right one is present whichever interpreter
-# nixpacks resolves; start.sh probes them and loads only the one that
-# genuinely initializes. The others are never referenced.
+# Adding phpXXExtensions.pdo_pgsql breaks the build: nix-env merges every
+# package into one profile, and two pdo_pgsql derivations both claim
+# lib/php/extensions/pdo_pgsql.so, so nix aborts with a collision error.
+# If a future PHP bump ever does drop the driver, add exactly ONE version,
+# matching the interpreter nixpacks resolves from composer.json's
+# `require.php` - a mismatched .so does not error, it just silently fails to
+# initialize and resurfaces as "could not find driver" on the first query.
 nixPkgs = [
     "...",
     "python311Packages.supervisor",
-    "php82Extensions.pdo_pgsql",
-    "php83Extensions.pdo_pgsql",
-    "php84Extensions.pdo_pgsql",
 ]
 
 [phases.build]
