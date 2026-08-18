@@ -227,11 +227,23 @@ fi
 # Caches, built after APP_KEY and the database are settled so what gets cached
 # is correct. Cleared first so a stale cache baked into the image cannot win.
 # ---------------------------------------------------------------------------
+# Filament keeps its compiled CSS/JS inside the vendor package and copies it
+# into public/ on demand. Those copies are gitignored (they would otherwise go
+# stale against the installed version on every composer update), so without
+# this step /admin renders unstyled with no working JavaScript.
+echo "--- Publishing Filament assets ---"
+php artisan filament:assets --no-interaction || true
+
 echo "--- Building caches ---"
 php artisan optimize:clear --no-interaction || true
+php artisan filament:optimize-clear --no-interaction || true
 php artisan config:cache --no-interaction || true
 php artisan route:cache --no-interaction || true
 php artisan view:cache --no-interaction || true
+# Caches Filament's discovered panel components and the Blade icon manifest.
+# Without it every request re-scans app/Filament and re-resolves icon sets
+# from disk, which is the single biggest cost on a cold Filament page.
+php artisan filament:optimize --no-interaction || true
 php artisan storage:link --no-interaction || true
 
 echo "--- Starting supervisor ---"

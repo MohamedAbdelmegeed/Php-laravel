@@ -22,3 +22,10 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Filament publishes these from vendor on `php artisan filament:assets`, which
+# runs at container start. Committing them means every `composer update` leaves
+# stale CSS/JS in git that silently disagrees with the installed package.
+/public/css/filament
+/public/fonts/filament
+/public/js/filament
