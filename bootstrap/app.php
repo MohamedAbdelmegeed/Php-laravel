@@ -11,7 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Coolify terminates TLS at its Traefik proxy and forwards the request
+        // over plain HTTP. Without this Laravel sees http://, so url() and
+        // redirects emit mixed-content links, and the session cookie is not
+        // marked secure on an https:// domain.
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
